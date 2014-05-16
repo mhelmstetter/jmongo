@@ -1,0 +1,167 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:aop="http://www.springframework.org/schema/aop"
+        xmlns:util="http://www.springframework.org/schema/util"
+        xsi:schemaLocation="
+                http://www.springframework.org/schema/beans
+                http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+                http://www.springframework.org/schema/aop
+                http://www.springframework.org/schema/aop/spring-aop-2.0.xsd
+                http://www.springframework.org/schema/util
+                http://www.springframework.org/schema/util/spring-util-2.0.xsd">
+
+	<bean id="propertyConfigurer"
+        class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations">
+            <list>
+                <value>classpath:**/datagen.properties</value>
+            </list>
+        </property>
+    </bean>
+	
+    <bean id="velocityEngine" class="org.springframework.ui.velocity.VelocityEngineFactoryBean">
+        <property name="velocityProperties">
+            <props>
+                <prop key="resource.loader">class</prop>
+                <prop key="class.resource.loader.class">
+                    org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader
+                </prop>
+                <prop key="velocimacro.library"></prop>
+            </props>
+        </property>
+    </bean>
+	
+	<bean id="velocityService" class="com.mongodb.util.VelocityServiceImpl">
+		<property name="velocityEngine" ref="velocityEngine"/>
+		<property name="tools">
+			<util:map>                      
+				<entry key="rand" value-ref="randomService"/>  
+             </util:map>  
+		</property>
+	</bean>
+
+	<bean id="randomService" class="com.mongodb.datagen.RandomServiceImpl">
+	   <property name="dictionaries">
+		   <util:map>                      
+				<entry key="eng" value-ref="englishDictionary"/>  
+			    <entry key="class" value-ref="classificationTuplesDictionary"/>
+			    <entry key="dp" value-ref="dataProvidersDictionary"/>
+				<entry key="iso3166" value-ref="iso3166Dictionary"/>
+			    <entry key="firstName" value-ref="firstNamesDictionary"/>  
+			    <entry key="lastName" value-ref="lastNamesDictionary"/> 
+			    <entry key="lang" value-ref="languagesDictionary"/> 
+			    <entry key="cities" value-ref="citiesDictionary"/>
+			    <entry key="cartoonCharacters" value-ref="cartoonCharactersDictionary"/>
+			    <entry key="usCities" value-ref="usCitiesDictionary"/>
+           </util:map> 
+        </property>
+   </bean>
+	
+	<bean id="xmlFileWriterHandler" class="com.mongodb.datagen.handlers.XmlFileWriterHandler"
+    	init-method="init">
+        <property name="outputDir" value="${xml.output.dir}"/>
+        <property name="cleanOutputDir" value="${cleanOutputDir}"/>
+    </bean>
+    
+  <bean id="zipFileWriterHandler" class="com.mongodb.datagen.handlers.ZipFileWriterHandler"
+      init-method="init">
+        <property name="outputDir" value="${xml.output.dir}"/>
+        <property name="cleanOutputDir" value="${cleanOutputDir}"/>
+    </bean>
+
+	<bean id="mongo" class="com.mongodb.MongoClient">
+	
+		<constructor-arg type="java.lang.String"
+			value="${mongo.host}" />
+		<constructor-arg type="int"
+			value="${mongo.port}" />
+	</bean>
+
+	<bean id="mongoDbDocumentInsertHandler" class="com.mongodb.datagen.handlers.MongoDbDocumentInsertHandler"
+		init-method="init">
+		<property name="mongoClient" ref="mongo" />
+		<property name="databaseName" value="${mongo.databaseName}" />
+		<property name="collectionName" value="${mongo.collectionName}" />
+		<property name="dropCollection" value="true" />
+		
+	</bean>
+
+
+
+	<bean id="templateDictionary" class="com.mongodb.datagen.TextDictionary">
+		<property name="sourceFile" value="classpath:datagen/templates/templateList"/>	
+	</bean>
+		
+   <bean id="dataService" class="com.mongodb.datagen.DataServiceImpl">
+	   <property name="velocityService" ref="velocityService"/>	
+	   <!--  
+	   <property name="randomService" ref="randomService"/>
+	   -->
+	   <property name="templateDictionary" ref="templateDictionary"/>
+	   <property name="dataHandlers">
+            <list>
+                <ref bean="mongoDbDocumentInsertHandler"/>
+            </list>
+        </property>	
+   </bean>
+  
+   
+   <!--  
+   <bean id="accessLogGenerator" class="com.mongodb.datagen.AccessLogGenerator">
+     <property name="randomService" ref="randomService"/>
+   </bean>
+    -->
+   
+    
+    
+	<bean id="englishDictionary" class="com.mongodb.datagen.TextDictionary">
+		<property name="sourceFiles">
+            <list>
+                <value>classpath:datagen/dictionaries/english-words.10</value>
+				<value>classpath:datagen/dictionaries/english-words.20</value>
+				<value>classpath:datagen/dictionaries/english-words.35</value>
+				<value>classpath:datagen/dictionaries/english-words.40</value>
+				<value>classpath:datagen/dictionaries/english-words.50</value>
+				<value>classpath:datagen/dictionaries/english-words.55</value>
+				<value>classpath:datagen/dictionaries/english-words.60</value>
+				<!-- 
+				<value>classpath:datagen/dictionaries/english-words.70</value>
+				<value>classpath:datagen/dictionaries/english-words.80</value>
+				<value>classpath:datagen/dictionaries/english-words.95</value>
+				 -->
+            </list>
+        </property>	
+	</bean>
+	
+	<bean id="firstNamesDictionary" class="com.mongodb.datagen.TextDictionary">
+		<property name="sourceFile" value="classpath:datagen/enums/firstNames"/>	
+	</bean>
+	<bean id="lastNamesDictionary" class="com.mongodb.datagen.TextDictionary">
+		<property name="sourceFile" value="classpath:datagen/enums/lastNames"/>	
+	</bean>
+	
+	<bean id="classificationTuplesDictionary" class="com.mongodb.datagen.TupleDictionaryImpl">
+		<property name="sourceFile" value="classpath:datagen/enums/classificationTuples"/>	
+	</bean>
+	<bean id="dataProvidersDictionary" class="com.mongodb.datagen.WeightedTextDictionary">
+		<property name="sourceFile" value="classpath:datagen/enums/dataProviders"/>	
+	</bean>	
+	<bean id="iso3166Dictionary" class="com.mongodb.datagen.TupleDictionaryImpl">
+		<property name="sourceFile" value="classpath:datagen/enums/ISO3166-1"/>	
+	</bean>
+	<bean id="citiesDictionary" class="com.mongodb.datagen.TupleDictionaryImpl">
+		<property name="sourceFile" value="classpath:datagen/geo/cities.txt"/>	
+	</bean>	
+	<bean id="languagesDictionary" class="com.mongodb.datagen.WeightedTextDictionary">
+		<property name="sourceFile" value="classpath:datagen/enums/languages"/>	
+	</bean>
+	<bean id="cartoonCharactersDictionary" class="com.mongodb.datagen.TextDictionary">
+		<property name="sourceFile" value="classpath:datagen/enums/cartoonCharacters"/>	
+	</bean>
+	<bean id="usCitiesDictionary" class="com.mongodb.datagen.TextDictionary">
+		<property name="sourceFile" value="classpath:datagen/geo/usCities.txt"/>	
+	</bean>
+		
+
+</beans>
+

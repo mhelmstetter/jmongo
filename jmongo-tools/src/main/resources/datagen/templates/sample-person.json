@@ -1,0 +1,74 @@
+#set($firstName = $rand.dict("firstName"))
+#set($lastName = $rand.dict("lastName"))
+#set($countryRec = $rand.tuple("iso3166"))
+#set($country = $listTool.get($countryRec, 0))
+#set($countryCode = $listTool.get($countryRec, 2))
+#set($c1 = $rand.dict("cartoonCharacters"))
+#set($c2 = $rand.dict("cartoonCharacters"))
+#set($cartoonCharacters = $rand.dictList("cartoonCharacters", 5))
+{
+  "firstName":"${firstName}",
+  "lastName":"${lastName}",
+  
+  "ssn": {
+    "sl" : [ 
+      [ #set($class = $rand.tuple("class"))
+	    {"c":"${class.get(0)}"} ]
+      
+      #if( $class.size() > 1 && $class.get(1) != "" )
+        , [
+	    #set($scis = $class.get(1).split("\^"))
+	    #foreach( $sci in $scis )
+	      #if ($velocityCount>1),#end
+	      {"sci":"${sci}"}
+	    #end
+	    ]
+	  #end 
+      
+    ],
+    "value": "${randomUtils.getRandomInt(100, 899)}-${randomUtils.getRandomInt(10, 99)}-${randomUtils.getRandomInt(1000, 8999)}"
+  	},
+  	
+    "country": {
+    "sl" : [ 
+      [ #set($class = $rand.tuple("class"))
+	    {"c":"${class.get(0)}"} ]
+      
+      #if( $class.size() > 1 && $class.get(1) != "" )
+        , [
+	    #set($scis = $class.get(1).split("\^"))
+	    #foreach( $sci in $scis )
+	      #if ($velocityCount>1),#end
+	      {"sci":"${sci}"}
+	    #end
+	    ]
+	  #end 
+      
+    ],
+    "value": "${country}"
+  	},
+  
+  "favorites": {
+    "sl" : [ 
+      [ #set($class = $rand.tuple("class"))
+	    {"c":"${class.get(0)}"} ]
+      
+      #if( $class.size() > 1 && $class.get(1) != "" )
+        , [
+	    #set($scis = $class.get(1).split("\^"))
+	    #foreach( $sci in $scis )
+	      #if ($velocityCount>1),#end
+	      {"sci":"${sci}"}
+	    #end
+	    ]
+	  #end 
+      
+    ],
+    
+    "cartoonCharacters":[
+  	${randomUtils.quotedList($cartoonCharacters)}
+    ]
+    
+  	}
+  }
+}

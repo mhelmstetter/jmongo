@@ -1,0 +1,9 @@
+#set($octet3 = $randomUtils.getRandomInt(0, 255))
+#set($octet4 = $randomUtils.getRandomInt(1, 254))
+#set($character = $rand.dict("cartoonCharacters", $octet4).toLowerCase())
+#set($city = $rand.dict("usCities", $octet3).toLowerCase().replace(" ", ""))
+{
+  "ip":"10.0.${octet3}.${octet4}",
+  "character":"${character}",
+  "city":"${city}"
+}
