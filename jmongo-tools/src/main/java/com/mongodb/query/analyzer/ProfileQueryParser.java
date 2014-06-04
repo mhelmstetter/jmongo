@@ -21,7 +21,7 @@ public class ProfileQueryParser {
     protected static final Logger logger = LoggerFactory.getLogger(ProfileQueryParser.class);
     
     private final static String[] RANGE_QUERY_OPERATORS = { "$ne", "$gt", "$lt", "$gte", "$lte", "$in", "$nin", "$all",
-    "$not" };
+    "$not", "$in" };
     
     JsonFactory f = new JsonFactory();
     JsonParser jp;
@@ -56,7 +56,7 @@ public class ProfileQueryParser {
         
         while (currentToken != null) {
             String key = jp.getCurrentName();
-            //logger.debug(currentToken.toString() + " key:" + key);
+            logger.trace(currentToken.toString() + " key:" + key);
             
             switch (currentToken) {
             case START_OBJECT:
@@ -104,8 +104,9 @@ public class ProfileQueryParser {
 
     @SuppressWarnings("unchecked")
     protected void add(String key, Object value) {
-        //logger.debug(String.format("add() key: %s value: %s", key, value));
-        if (! ignoreKeySet.contains(key)) {
+        logger.debug(String.format("add() key: %s value: %s", key, value));
+        if (key != null && ! ignoreKeySet.contains(key)) {
+            logger.debug(String.format("parser add() '%s'", key));
             keySet.add(key); 
         }
         

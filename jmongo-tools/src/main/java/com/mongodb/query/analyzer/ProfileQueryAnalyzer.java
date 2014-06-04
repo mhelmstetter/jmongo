@@ -29,11 +29,13 @@ import com.mongodb.util.JSON;
 
 public class ProfileQueryAnalyzer {
 
-    protected static final Logger logger = LoggerFactory.getLogger(ProfileQueryParser.class);
+    protected static final Logger logger = LoggerFactory.getLogger(ProfileQueryAnalyzer.class);
     
     private Map<String, ProfileStatistics> keysHistogram = new HashMap<String, ProfileStatistics>();
     
     private ProfileQueryAnalyzerConfig config;
+    
+    ProfileQueryParser parser = new ProfileQueryParser();
     
     public ProfileQueryAnalyzer(ProfileQueryAnalyzerConfig config) {
         this.config = config;
@@ -68,38 +70,23 @@ public class ProfileQueryAnalyzer {
     }
     
     private void analyze(MongoClient mongo) throws JsonParseException, IOException {
-        ProfileQueryParser parser = new ProfileQueryParser();
+        
         
         
         DB db = mongo.getDB(config.getDatabaseName());
         DBCollection profileCollection = db.getCollection(config.getCollectionName());
         
         BasicDBList opTypes = new BasicDBList();
-        //opTypes.add("query");
+        opTypes.add("query");
         opTypes.add("getmore");
         
         DBObject queryQuery = new BasicDBObject("op", new BasicDBObject("$in", opTypes)).append("ns", config.getProfiledDatabaseName() + "." + config.getProfiledCollectionName());
         //DBObject queryProjection = new BasicDBObject("query", true).append("_id", false);
         DBCursor cursor = profileCollection.find(queryQuery, null);
+        logger.debug(String.format("Query count: %s", cursor.count()));;
         while (cursor.hasNext()) {
             DBObject profile = cursor.next();
-            String opType = (String)profile.get("op");
-            DBObject profileQuery = (DBObject)((DBObject)profile.get("query")).get("$query");
-            String profileJson = JSON.serialize(profileQuery);
-            String[] keys = parser.parse(profileJson);
-            String keysString = StringUtils.join(keys, ",");
-            
-            String op = (String)profile.get("op");
-            logger.debug(op);
-            
-            ProfileStatistics existing = keysHistogram.get(keysString);
-            if (existing == null) {
-                existing = new ProfileStatistics();
-                existing.incrementQuery();
-                keysHistogram.put(keysString, existing);
-            } else {
-                existing.incrementQuery();
-            }
+            processQuery(profile);
         }
         
         DBObject commandQuery = new BasicDBObject("op", "command").append("ns", config.getProfiledDatabaseName() + ".$cmd");
@@ -108,22 +95,42 @@ public class ProfileQueryAnalyzer {
         cursor = profileCollection.find(commandQuery, null);
         while (cursor.hasNext()) {
             DBObject profile = cursor.next();
-            //logger.debug(profile.toString());
-            DBObject command = (DBObject)profile.get("command");
-            DBObject profileQuery = (DBObject)command.get("query");
-            
-            String profileJson = JSON.serialize(profileQuery);
-            String[] keys = parser.parse(profileJson);
-            String keysString = StringUtils.join(keys, ",");
-            
-            ProfileStatistics existing = keysHistogram.get(keysString);
-            if (existing == null) {
-                existing = new ProfileStatistics();
-                keysHistogram.put(keysString, existing);
-            }
-            
-            String commandStr = processCommand(command, existing);
-            //logger.debug(commandStr);
+            processCommand(profile);
+        }
+    }
+    
+    public void processCommand(DBObject profile) throws JsonParseException, IOException {
+        DBObject command = (DBObject)profile.get("command");
+        DBObject profileQuery = (DBObject)command.get("query");
+        
+        String profileJson = JSON.serialize(profileQuery);
+        String[] keys = parser.parse(profileJson);
+        String keysString = StringUtils.join(keys, ",");
+        ProfileStatistics existing = keysHistogram.get(keysString);
+        if (existing == null) {
+            existing = new ProfileStatistics();
+            keysHistogram.put(keysString, existing);
+        }
+        
+        String commandStr = processCommand(command, existing);
+    }
+    
+    public void processQuery(DBObject profile) throws JsonParseException, IOException {
+        String opType = (String)profile.get("op");
+        DBObject profileQuery = (DBObject)((DBObject)profile.get("query")).get("$query");
+        String profileJson = JSON.serialize(profileQuery);
+        String[] keys = parser.parse(profileJson);
+        String keysString = StringUtils.join(keys, ",");
+        
+        String op = (String)profile.get("op");
+        
+        ProfileStatistics existing = keysHistogram.get(keysString);
+        if (existing == null) {
+            existing = new ProfileStatistics();
+            existing.incrementQuery();
+            keysHistogram.put(keysString, existing);
+        } else {
+            existing.incrementQuery();
         }
     }
     

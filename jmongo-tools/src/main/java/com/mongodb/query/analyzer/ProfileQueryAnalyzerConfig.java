@@ -28,6 +28,9 @@ public class ProfileQueryAnalyzerConfig {
         this.loadProperties(propsPath);
     }
     
+    public ProfileQueryAnalyzerConfig() {
+    }
+
     private void loadProperties(String propsPath) throws ConfigurationException, UnknownHostException {
         logger.debug(String.format("Reading properties from %s", propsPath));
         Configuration props = new PropertiesConfiguration(propsPath);

@@ -1,0 +1,2 @@
+{ "op" : "command", "ns" : "hmda.$cmd", "command" : { "count" : "hmda_lar", "query" : { "$and" : [ { "da" : 2012 }, { "eb" : { "$in" : [ 1, 2 ] } }, { "a14" : 1 }, { "fb" : 1 }, { "25" : 1 } ] } }, "ntoreturn" : 1, "keyUpdates" : 0, "numYield" : 35, "lockStats" : { "timeLockedMicros" : { "r" : 17507338, "w" : 0 }, "timeAcquiringMicros" : { "r" : 12802, "w" : 317 } }, "responseLength" : 108, "millis" : 8821, "execStats" : {  }, 
+"client" : "10.153.91.183", "allUsers" : [ { "user" : "__system", "db" : "local" } ], "user" : "__system@local" }
