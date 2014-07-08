@@ -172,6 +172,10 @@
 							<mainClass>com.mongodb.query.analyzer.ProfileQueryAnalyzer</mainClass>
 							<id>profileQueryAnalyzer</id>
 						</program>
+						<program>
+							<mainClass>com.mongodb.load.Loader</mainClass>
+							<id>loader</id>
+						</program>
 					</programs>
 					<repositoryLayout>flat</repositoryLayout>
 					<repositoryName>lib</repositoryName>

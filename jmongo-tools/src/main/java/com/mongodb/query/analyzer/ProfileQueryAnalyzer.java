@@ -78,7 +78,9 @@ public class ProfileQueryAnalyzer {
         
         BasicDBList opTypes = new BasicDBList();
         opTypes.add("query");
-        opTypes.add("getmore");
+        
+        //TODO need special logic for handling getmores. query is null, probably need to track cursor ids.
+        //opTypes.add("getmore");
         
         DBObject queryQuery = new BasicDBObject("op", new BasicDBObject("$in", opTypes)).append("ns", config.getProfiledDatabaseName() + "." + config.getProfiledCollectionName());
         //DBObject queryProjection = new BasicDBObject("query", true).append("_id", false);
@@ -117,12 +119,15 @@ public class ProfileQueryAnalyzer {
     
     public void processQuery(DBObject profile) throws JsonParseException, IOException {
         String opType = (String)profile.get("op");
-        DBObject profileQuery = (DBObject)((DBObject)profile.get("query")).get("$query");
+        DBObject outer = (DBObject)profile.get("query");
+        logger.debug(profile.toString());
+        DBObject profileQuery = (DBObject)outer.get("$query");
+        
+        
         String profileJson = JSON.serialize(profileQuery);
         String[] keys = parser.parse(profileJson);
         String keysString = StringUtils.join(keys, ",");
         
-        String op = (String)profile.get("op");
         
         ProfileStatistics existing = keysHistogram.get(keysString);
         if (existing == null) {
@@ -134,6 +139,18 @@ public class ProfileQueryAnalyzer {
         }
     }
     
+    public void processAggregate(DBObject profile) {
+        
+        String collection = (String)profile.get("aggregate");
+        if (collection.equals(config.getProfiledCollectionName())) {
+            logger.debug(profile.toString());
+            DBObject pipeline = (DBObject)profile.get("pipeline");
+            logger.debug(pipeline.toString());
+        }
+        
+        
+    }
+    
     private String processCommand(DBObject command, ProfileStatistics stats) {
         if (command.containsField("count")) {
             return filterCommandByCollection(command, "count", stats);
@@ -142,6 +159,7 @@ public class ProfileQueryAnalyzer {
         } else if (command.containsField("aggregate")) {
             //TODO handle aggregate
             logger.warn("\"aggregate\" command analysis not currently implemented");
+            processAggregate(command);
         } else {
             //logger.warn("Unrecognized command: " + command);
         }

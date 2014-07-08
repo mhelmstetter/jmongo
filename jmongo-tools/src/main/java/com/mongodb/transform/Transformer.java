@@ -3,7 +3,6 @@ package com.mongodb.transform;
 import java.net.UnknownHostException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -13,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import com.mongodb.util.Monitor2;
 
 public class Transformer {
 
@@ -35,7 +35,7 @@ public class Transformer {
 //        Thread monitorThread = new Thread(monitor);
 //        monitorThread.start();
 
-        Monitor monitor = new Monitor(pool, 1);
+        Monitor2 monitor = new Monitor2(pool, 1);
         Thread t = new Thread(monitor);
         t.setDaemon(true);
         t.start();

@@ -1,13 +1,13 @@
-package com.mongodb.transform;
+package com.mongodb.util;
 
 import java.util.concurrent.ThreadPoolExecutor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Monitor implements Runnable {
+public class Monitor2 implements Runnable {
     
-    protected static final Logger logger = LoggerFactory.getLogger(Monitor.class);
+    protected static final Logger logger = LoggerFactory.getLogger(Monitor2.class);
 
     private ThreadPoolExecutor executor;
 
@@ -15,7 +15,7 @@ public class Monitor implements Runnable {
 
     private boolean run = true;
 
-    public Monitor(ThreadPoolExecutor executor, int delay) {
+    public Monitor2(ThreadPoolExecutor executor, int delay) {
         this.executor = executor;
         this.seconds = delay;
     }
