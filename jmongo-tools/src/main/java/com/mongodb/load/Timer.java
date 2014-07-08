@@ -76,7 +76,7 @@ public class Timer {
             if (_keepEvent) {
                 events.add(event);
             }
-            eventCount++;
+            eventCount += event.getCount();
         }
     }
 

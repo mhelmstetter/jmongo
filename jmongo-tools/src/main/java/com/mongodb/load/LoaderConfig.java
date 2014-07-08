@@ -13,10 +13,13 @@ import com.mongodb.MongoClient;
 
 public class LoaderConfig {
     
+    private static final int DEFAULT_QUEUE_SIZE = 1000000;
+
     public static final String DEFAULT_INPUT_PATTERN = "^.+\\.[jJ][sS][oO][nN]$";
     
     public static final int DISPLAY_MILLIS = 15000;
     public static final int SLEEP_TIME = 500;
+    public static final int DEFAULT_BATCH_SIZE = 100;
     
     private String host;
     private Integer port;
@@ -31,6 +34,7 @@ public class LoaderConfig {
     private DB db;
     private DBCollection collection;
     private boolean dropCollection;
+    private Integer batchSize;
     
     private int queueSize;
     private int threads;
@@ -57,8 +61,9 @@ public class LoaderConfig {
         db = mongoClient.getDB(databaseName);
         collection = db.getCollection(collectionName);
         dropCollection = props.getBoolean("dropCollection");
+        batchSize = props.getInt("batchSize", DEFAULT_BATCH_SIZE);
         
-        setQueueSize(props.getInt("queueSize", 1000000));
+        setQueueSize(props.getInt("queueSize", DEFAULT_QUEUE_SIZE));
         setThreads(props.getInt("threads", 8));
         
     }
@@ -161,6 +166,14 @@ public class LoaderConfig {
 
     public void setDropCollection(boolean dropCollection) {
         this.dropCollection = dropCollection;
+    }
+
+    public Integer getBatchSize() {
+        return batchSize;
+    }
+
+    public void setBatchSize(Integer batchSize) {
+        this.batchSize = batchSize;
     }
 
 }

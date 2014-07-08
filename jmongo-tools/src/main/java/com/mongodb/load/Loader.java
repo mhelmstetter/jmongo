@@ -10,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.mongodb.DBCollection;
-import com.mongodb.transform.Transformer;
 import com.mongodb.util.Monitor;
 
 public class Loader {

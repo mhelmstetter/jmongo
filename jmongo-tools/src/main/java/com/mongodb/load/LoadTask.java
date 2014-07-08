@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.util.concurrent.Callable;
 
+import com.mongodb.BulkWriteOperation;
+import com.mongodb.BulkWriteResult;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import com.mongodb.util.Monitor;
@@ -25,18 +27,29 @@ public class LoadTask implements Callable {
     @Override
     public Object call() throws Exception {
         
+        event = new TimedEvent();
+        
         BufferedReader in = new BufferedReader(new FileReader(file));
         
         String currentLine = null;
+        int count = 0;
+        BulkWriteOperation bulkWrite = config.getCollection().initializeUnorderedBulkOperation();
         while ((currentLine = in.readLine()) != null) {
-            event = new TimedEvent();
-            if (currentLine.length() > 0) {
-                insert(currentLine);
+            if (currentLine.length() == 0) {
+                continue;
             }
-            monitor.add(event);
+            event.incrementCount();
+            bulkWrite.insert((DBObject)JSON.parse(currentLine));
+            if (++count % config.getBatchSize() == 0) {
+                BulkWriteResult result = bulkWrite.execute();
+                bulkWrite = config.getCollection().initializeUnorderedBulkOperation();
+            }
+            
         }
+        bulkWrite.execute();
         in.close();
         
+        monitor.add(event);
         return null;
     }
 

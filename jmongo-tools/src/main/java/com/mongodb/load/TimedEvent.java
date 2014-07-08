@@ -30,6 +30,8 @@ public class TimedEvent {
     private boolean error = false;
 
     private long start;
+    
+    private long count = 0;
 
     public TimedEvent() {
         start = System.nanoTime();
@@ -116,12 +118,28 @@ public class TimedEvent {
     public void increment(long _bytes) {
         bytes += _bytes;
     }
+    
+    public void incrementCount() {
+        count++;
+    }
+    
+    public void incrementCount(long i) {
+        count += i;
+    }
 
     /**
      * @param b
      */
     public void setError(boolean b) {
         error = true;
+    }
+
+    public long getCount() {
+        return count;
+    }
+
+    public void setCount(long count) {
+        this.count = count;
     }
 
 }
