@@ -5,9 +5,13 @@ import java.io.File;
 import java.io.FileReader;
 import java.util.concurrent.Callable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.mongodb.BulkWriteOperation;
 import com.mongodb.BulkWriteResult;
 import com.mongodb.DBObject;
+import com.mongodb.WriteConcern;
 import com.mongodb.util.JSON;
 import com.mongodb.util.Monitor;
 
@@ -17,6 +21,8 @@ public class LoadTask implements Callable {
     private LoaderConfig config;
     private TimedEvent event;
     private Monitor monitor;
+    
+    protected static final Logger logger = LoggerFactory.getLogger(Loader.class);
     
     public LoadTask(File file, LoaderConfig config, Monitor monitor) {
         this.file = file;
@@ -30,6 +36,7 @@ public class LoadTask implements Callable {
         event = new TimedEvent();
         
         BufferedReader in = new BufferedReader(new FileReader(file));
+        logger.debug("reading file " + file);
         
         String currentLine = null;
         int count = 0;
@@ -41,7 +48,7 @@ public class LoadTask implements Callable {
             event.incrementCount();
             bulkWrite.insert((DBObject)JSON.parse(currentLine));
             if (++count % config.getBatchSize() == 0) {
-                BulkWriteResult result = bulkWrite.execute();
+                BulkWriteResult result = bulkWrite.execute(WriteConcern.UNACKNOWLEDGED);
                 bulkWrite = config.getCollection().initializeUnorderedBulkOperation();
             }
             
