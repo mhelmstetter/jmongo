@@ -140,7 +140,8 @@ public class Monitor extends Thread {
                 logger.info("inserted record " + timer.getEventCount()
                          + " ("
                         + timer.getProgressMessage() + "), with "
-                        + timer.getErrorCount() + " error(s)");
+                        + timer.getErrorCount() + " error(s) "
+                        + pool.getActiveCount() + " active threads");
                 logger.trace("thread count: core="
                         + pool.getCorePoolSize() + ", active="
                         + pool.getActiveCount());
