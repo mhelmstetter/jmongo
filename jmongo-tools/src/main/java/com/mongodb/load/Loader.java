@@ -6,6 +6,14 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.configuration.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,20 +115,86 @@ public class Loader {
         scanner.scan();
 
     }
+    
+    /*
+     * host=localhost
+port=27017
+database=loader
+collection=test
+dropCollection=false
 
-    public static void main(String[] args) {
-        if (args.length == 0) {
-            System.out.println("Usage: java " + Loader.class.getName() + " <loaderPropertiesFile>");
-            System.exit(-1);
-        }
+inputPath=/data/serial
+threads=32
+batchSize=100
+     */
+    
+    @SuppressWarnings("static-access")
+    private static LoaderConfig initializeAndParseCommandLineOptions(String[] args) throws ConfigurationException, UnknownHostException {
+        Options options = new Options();
+        options.addOption(OptionBuilder.withArgName("hostname")
+                .hasArg().isRequired()
+                .withDescription(  "mongod or mongos host (default localhost)" )
+                .withLongOpt("host")
+                .create( "h" ));
+        options.addOption(OptionBuilder.withArgName("port number")
+                .hasArg()
+                .withDescription(  "mongod or mongos port (default 27017)" )
+                .withLongOpt("port")
+                .create( "p" ));
+        options.addOption(OptionBuilder.withArgName("database name")
+                .hasArg()
+                .isRequired()
+                .withDescription(  "database to use" )
+                .create( "db" ));
+        options.addOption(OptionBuilder.withArgName("collection name")
+                .hasArg()
+                .isRequired()
+                .withDescription(  "collection to use" )
+                .withLongOpt("collection")
+                .create( "c" ));
+        options.addOption(OptionBuilder.withArgName("input path")
+                .hasArg()
+                .isRequired()
+                .withDescription(  "directory path to load files from" )
+                .withLongOpt("inputPath")
+                .create( "i" ));
+        options.addOption(OptionBuilder.withArgName("# threads")
+                .hasArg()
+                .withDescription(  "number of threads" )
+                .withLongOpt("threads")
+                .create( "t" ));
+        options.addOption(OptionBuilder.withArgName("batch size (default 8)")
+                .hasArg()
+                .withDescription(  "number of documents per batch (default 100)" )
+                .withLongOpt("batchSize")
+                .create( "b" ));
 
+        CommandLineParser parser = new GnuParser();
+        CommandLine line = null;
         LoaderConfig config = null;
         try {
-            config = new LoaderConfig(args[0]);
+            line = parser.parse( options, args );
+            config = new LoaderConfig(line);
+        } catch (ParseException e) {
+            System.out.println(e.getMessage());
+            printHelpAndExit(options);
         } catch (Exception e) {
-            logger.error("Error loading properties file", e);
-            System.exit(-1);
+            e.printStackTrace();
+            printHelpAndExit(options);
         }
+        return config;
+        
+    }
+    
+    private static void printHelpAndExit(Options options) {
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.printHelp( "loader", options );
+        System.exit(-1);
+    }
+
+    public static void main(String[] args) throws ConfigurationException, UnknownHostException {
+        
+        LoaderConfig config = initializeAndParseCommandLineOptions(args);
         Loader loader = new Loader(config);
 
         try {

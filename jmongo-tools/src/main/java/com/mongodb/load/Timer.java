@@ -275,8 +275,8 @@ public class Timer {
         return (rawValues ? getBytes() + " B in " + getDurationSeconds()
                 + " s, " : "")
                 + Math.round(getEventsPerSecond())
-                + " tps, "
-                + Math.round(getKilobytesPerSecond()) + " kB/s";
+                + " tps";
+                //+ Math.round(getKilobytesPerSecond()) + " kB/s";
     }
 
     /**

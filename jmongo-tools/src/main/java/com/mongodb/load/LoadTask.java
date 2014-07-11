@@ -48,7 +48,7 @@ public class LoadTask implements Callable {
             event.incrementCount();
             bulkWrite.insert((DBObject)JSON.parse(currentLine));
             if (++count % config.getBatchSize() == 0) {
-                BulkWriteResult result = bulkWrite.execute(WriteConcern.UNACKNOWLEDGED);
+                bulkWrite.execute();
                 bulkWrite = config.getCollection().initializeUnorderedBulkOperation();
             }
             

@@ -3,6 +3,7 @@ package com.mongodb.load;
 import java.io.File;
 import java.net.UnknownHostException;
 
+import org.apache.commons.cli.CommandLine;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -43,11 +44,27 @@ public class LoaderConfig {
         this.loadProperties(propsPath);
     }
     
+    public LoaderConfig(CommandLine line) throws ConfigurationException, UnknownHostException {
+        Configuration props = new PropertiesConfiguration();
+        props.addProperty("host", line.getOptionValue("h"));
+        props.addProperty("port", line.getOptionValue("p"));
+        props.addProperty("inputPath", line.getOptionValue("i"));
+        props.addProperty("database", line.getOptionValue("db"));
+        props.addProperty("collection", line.getOptionValue("c"));
+        props.addProperty("threads", line.getOptionValue("t"));
+        props.addProperty("batchSize", line.getOptionValue("b"));
+        loadProperties(props);
+        
+    }
+    
     private void loadProperties(String propsPath) throws ConfigurationException, UnknownHostException {
         Configuration props = new PropertiesConfiguration(propsPath);
-        
-        host = props.getString("host");
-        port = props.getInt("port");
+        loadProperties(props);
+    }
+    
+    private void loadProperties(Configuration props) throws ConfigurationException, UnknownHostException {
+        host = props.getString("host", "localhost");
+        port = props.getInt("port", 27017);
         databaseName = props.getString("database");
         collectionName = props.getString("collection");
         inputPath = props.getString("inputPath");
@@ -60,7 +77,7 @@ public class LoaderConfig {
         mongoClient = new MongoClient(host, port);
         db = mongoClient.getDB(databaseName);
         collection = db.getCollection(collectionName);
-        dropCollection = props.getBoolean("dropCollection");
+        dropCollection = props.getBoolean("dropCollection", false);
         batchSize = props.getInt("batchSize", DEFAULT_BATCH_SIZE);
         
         setQueueSize(props.getInt("queueSize", DEFAULT_QUEUE_SIZE));
