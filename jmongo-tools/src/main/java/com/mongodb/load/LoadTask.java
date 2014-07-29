@@ -9,9 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.mongodb.BulkWriteOperation;
-import com.mongodb.BulkWriteResult;
+import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import com.mongodb.WriteConcern;
 import com.mongodb.util.JSON;
 import com.mongodb.util.Monitor;
 
@@ -40,7 +39,8 @@ public class LoadTask implements Callable {
         
         String currentLine = null;
         int count = 0;
-        BulkWriteOperation bulkWrite = config.getCollection().initializeUnorderedBulkOperation();
+        DBCollection collection = config.getCollection();
+        BulkWriteOperation bulkWrite = collection.initializeUnorderedBulkOperation();
         while ((currentLine = in.readLine()) != null) {
             if (currentLine.length() == 0) {
                 continue;
@@ -49,7 +49,7 @@ public class LoadTask implements Callable {
             bulkWrite.insert((DBObject)JSON.parse(currentLine));
             if (++count % config.getBatchSize() == 0) {
                 bulkWrite.execute();
-                bulkWrite = config.getCollection().initializeUnorderedBulkOperation();
+                bulkWrite = collection.initializeUnorderedBulkOperation();
             }
             
         }

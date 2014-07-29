@@ -131,27 +131,33 @@ batchSize=100
     @SuppressWarnings("static-access")
     private static LoaderConfig initializeAndParseCommandLineOptions(String[] args) throws ConfigurationException, UnknownHostException {
         Options options = new Options();
-        options.addOption(OptionBuilder.withArgName("hostname")
-                .hasArg().isRequired()
-                .withDescription(  "mongod or mongos host (default localhost)" )
-                .withLongOpt("host")
-                .create( "h" ));
-        options.addOption(OptionBuilder.withArgName("port number")
-                .hasArg()
-                .withDescription(  "mongod or mongos port (default 27017)" )
-                .withLongOpt("port")
-                .create( "p" ));
-        options.addOption(OptionBuilder.withArgName("database name")
-                .hasArg()
+//        options.addOption(OptionBuilder.withArgName("hostname")
+//                .hasArg().isRequired()
+//                .withDescription(  "mongod or mongos host (default localhost)" )
+//                .withLongOpt("host")
+//                .create( "h" ));
+//        options.addOption(OptionBuilder.withArgName("port number")
+//                .hasArg()
+//                .withDescription(  "mongod or mongos port (default 27017)" )
+//                .withLongOpt("port")
+//                .create( "p" ));
+//        options.addOption(OptionBuilder.withArgName("database name")
+//                .hasArg()
+//                .isRequired()
+//                .withDescription(  "database to use" )
+//                .create( "db" ));
+//        options.addOption(OptionBuilder.withArgName("collection name")
+//                .hasArg()
+//                .isRequired()
+//                .withDescription(  "collection to use" )
+//                .withLongOpt("collection")
+//                .create( "c" ));
+        options.addOption(OptionBuilder.withArgName("connection uri(s)")
+                .hasArgs()
                 .isRequired()
-                .withDescription(  "database to use" )
-                .create( "db" ));
-        options.addOption(OptionBuilder.withArgName("collection name")
-                .hasArg()
-                .isRequired()
-                .withDescription(  "collection to use" )
-                .withLongOpt("collection")
-                .create( "c" ));
+                .withDescription(  "mongodb connection string uri(s), multiple uris will be round-robined" )
+                .withLongOpt("uri")
+                .create( "u" ));
         options.addOption(OptionBuilder.withArgName("input path")
                 .hasArg()
                 .isRequired()
@@ -162,11 +168,13 @@ batchSize=100
                 .hasArg()
                 .withDescription(  "number of threads" )
                 .withLongOpt("threads")
+                .withType(Number.class)
                 .create( "t" ));
         options.addOption(OptionBuilder.withArgName("batch size (default 8)")
                 .hasArg()
                 .withDescription(  "number of documents per batch (default 100)" )
                 .withLongOpt("batchSize")
+                .withType(Number.class)
                 .create( "b" ));
 
         CommandLineParser parser = new GnuParser();

@@ -2,15 +2,18 @@ package com.mongodb.load;
 
 import java.io.File;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.cli.ParseException;
 
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoClientURI;
+import com.mongodb.util.RoundRobin;
 
 public class LoaderConfig {
     
@@ -21,117 +24,108 @@ public class LoaderConfig {
     public static final int DISPLAY_MILLIS = 15000;
     public static final int SLEEP_TIME = 500;
     public static final int DEFAULT_BATCH_SIZE = 100;
+    public static final int DEFAULT_THREADS = 8;
     
-    private String host;
-    private Integer port;
+//    private String host;
+//    private Integer port;
     private String databaseName;
     private String collectionName;
+    private String connectionUri;
     
     private String inputPath;
     private File inputPathFile;
     private String inputPattern;
     
-    private MongoClient mongoClient;
-    private DB db;
-    private DBCollection collection;
+    private Iterator<DBCollection> collectionRoundRobin;
+    
+    //private MongoClient mongoClient;
+    //private DB db;
+    //private DBCollection collection;
     private boolean dropCollection;
-    private Integer batchSize;
+    private Integer batchSize = DEFAULT_BATCH_SIZE;
     
     private int queueSize;
-    private int threads;
+    private int threads = DEFAULT_THREADS;
     
-    public LoaderConfig(String propsPath) throws ConfigurationException, UnknownHostException {
-        this.loadProperties(propsPath);
-    }
+//    public LoaderConfig(String propsPath) throws ConfigurationException, UnknownHostException {
+//        this.loadProperties(propsPath);
+//    }
     
-    public LoaderConfig(CommandLine line) throws ConfigurationException, UnknownHostException {
-        Configuration props = new PropertiesConfiguration();
-        props.addProperty("host", line.getOptionValue("h"));
-        props.addProperty("port", line.getOptionValue("p"));
-        props.addProperty("inputPath", line.getOptionValue("i"));
-        props.addProperty("database", line.getOptionValue("db"));
-        props.addProperty("collection", line.getOptionValue("c"));
-        props.addProperty("threads", line.getOptionValue("t"));
-        props.addProperty("batchSize", line.getOptionValue("b"));
-        loadProperties(props);
+    public LoaderConfig(CommandLine line) throws ParseException {
+       
+        loadProperties(line);
         
     }
     
-    private void loadProperties(String propsPath) throws ConfigurationException, UnknownHostException {
-        Configuration props = new PropertiesConfiguration(propsPath);
-        loadProperties(props);
-    }
+//    private void loadProperties(String propsPath) throws ConfigurationException, UnknownHostException {
+//        Configuration props = new PropertiesConfiguration(propsPath);
+//        loadProperties(props);
+//    }
     
-    private void loadProperties(Configuration props) throws ConfigurationException, UnknownHostException {
-        host = props.getString("host", "localhost");
-        port = props.getInt("port", 27017);
-        databaseName = props.getString("database");
-        collectionName = props.getString("collection");
-        inputPath = props.getString("inputPath");
+    private void loadProperties(CommandLine line) throws ParseException {
+//        host = props.getString("host", "localhost");
+//        port = props.getInt("port", 27017);
+//        databaseName = props.getString("database");
+//        collectionName = props.getString("collection");
+        
+        
+        String[] connectionUris = line.getOptionValues("u");
+        List<DBCollection> collections = new ArrayList<DBCollection>(connectionUris.length);
+        for (String connectionUri : connectionUris) {
+            MongoClientURI uri = new MongoClientURI(connectionUri);
+            MongoClient mongoClient = null;
+            try {
+                mongoClient = new MongoClient(uri);
+            } catch (UnknownHostException e) {
+                throw new ParseException("Invalid MongoClient uri " + e.getMessage());
+            }
+            
+            databaseName = uri.getDatabase();
+            collectionName = uri.getCollection();
+            if (databaseName == null || collectionName == null) {
+                throw new ParseException("Database and collection must be specified with connection uri");
+            }
+            
+            DB db = mongoClient.getDB(databaseName);
+            DBCollection collection = db.getCollection(collectionName);
+            collections.add(collection);
+        }
+        RoundRobin<DBCollection> roundRobin = new RoundRobin<DBCollection>(collections);
+        collectionRoundRobin = roundRobin.iterator();
+        
+        inputPath = line.getOptionValue("i");
         inputPathFile = new File(inputPath);
         // TODO verify path is readable, etc.
-        inputPattern = props.getString("inputPattern", DEFAULT_INPUT_PATTERN);
-        if (inputPath == null || collectionName == null || port == null || databaseName == null || collectionName == null) {
-            throw new ConfigurationException("Missing configuration: inputPath, host, port, databaseName, and collectionName are required");
+        
+        // TODO read this from command line
+        inputPattern = DEFAULT_INPUT_PATTERN;
+        
+        
+        if (inputPath == null || connectionUri == null) {
+            throw new ParseException("Missing configuration: inputPath, and uri are required");
         }
-        mongoClient = new MongoClient(host, port);
-        db = mongoClient.getDB(databaseName);
-        collection = db.getCollection(collectionName);
-        dropCollection = props.getBoolean("dropCollection", false);
-        batchSize = props.getInt("batchSize", DEFAULT_BATCH_SIZE);
         
-        setQueueSize(props.getInt("queueSize", DEFAULT_QUEUE_SIZE));
-        setThreads(props.getInt("threads", 8));
+        
+        
+        //dropCollection = props.getBoolean("dropCollection", false);
+        batchSize = ((Long)line.getParsedOptionValue("b")).intValue();
+        //line.getParsedOptionValue(opt)
+        
+        setQueueSize(DEFAULT_QUEUE_SIZE);
+        
+        if (line.hasOption("t")) {
+            threads = ((Long)line.getParsedOptionValue("t")).intValue();
+        }
         
     }
 
-    public String getHost() {
-        return host;
-    }
-
-    public void setHost(String host) {
-        this.host = host;
-    }
-
-    public Integer getPort() {
-        return port;
-    }
-
-    public void setPort(Integer port) {
-        this.port = port;
-    }
-
-    public String getDatabaseName() {
-        return databaseName;
-    }
-
-    public void setDatabaseName(String databaseName) {
-        this.databaseName = databaseName;
-    }
-
-    public String getCollectionName() {
-        return collectionName;
-    }
-
-    public void setCollectionName(String collectionName) {
-        this.collectionName = collectionName;
-    }
-
-    public DB getDb() {
-        return db;
-    }
-
-    public void setDb(DB db) {
-        this.db = db;
-    }
+   
 
     public DBCollection getCollection() {
-        return collection;
+        return collectionRoundRobin.next();
     }
 
-    public void setCollection(DBCollection collection) {
-        this.collection = collection;
-    }
+    
 
     public int getQueueSize() {
         return queueSize;
@@ -149,9 +143,7 @@ public class LoaderConfig {
         this.threads = threads;
     }
 
-    public MongoClient getMongoClient() {
-        return mongoClient;
-    }
+    
 
     public String getInputPath() {
         return inputPath;
