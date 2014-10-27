@@ -71,7 +71,7 @@ public class Timer {
         synchronized (events) {
             bytes += event.getBytes();
             if (event.isError()) {
-                errors++;
+                errors += event.getErrorCount();
             }
             if (_keepEvent) {
                 events.add(event);
@@ -121,7 +121,7 @@ public class Timer {
      * @return
      */
     public long getSuccessfulEventCount() {
-        return eventCount - errors;
+        return eventCount;
     }
 
     /**

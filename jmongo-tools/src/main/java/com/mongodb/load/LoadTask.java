@@ -8,7 +8,9 @@ import java.util.concurrent.Callable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.mongodb.BulkWriteException;
 import com.mongodb.BulkWriteOperation;
+import com.mongodb.BulkWriteResult;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
@@ -45,20 +47,44 @@ public class LoadTask implements Callable {
             if (currentLine.length() == 0) {
                 continue;
             }
-            event.incrementCount();
+            //event.incrementCount();
             bulkWrite.insert((DBObject)JSON.parse(currentLine));
             if (++count % config.getBatchSize() == 0) {
-                bulkWrite.execute();
+                execute(bulkWrite, event, count);
                 bulkWrite = collection.initializeUnorderedBulkOperation();
+                count = 0;
             }
             
         }
-        bulkWrite.execute();
+        execute(bulkWrite, event, count);
         in.close();
         
         monitor.add(event);
         return null;
     }
+    
+    private static void execute(BulkWriteOperation bulkWrite, TimedEvent event, int count) {
+        BulkWriteResult result = null;
+        try {
+            result = bulkWrite.execute();
+            event.incrementCount(result.getInsertedCount());
+        } catch (BulkWriteException bulkWriteException) {
+            logger.warn("BulkWriteException: " + bulkWriteException.getWriteErrors().size() + "/" + count + " records failed.");
+            event.incrementError(bulkWriteException.getWriteErrors().size());
+            result = bulkWriteException.getWriteResult();
+            event.incrementCount(result.getInsertedCount());
+        } catch (Exception e) {
+            // TODO - need to figure out how to account for these errors that aren't BulkWriteException
+            // e.g. CommandFailureException
+            //e.printStackTrace();
+            event.incrementError(count);
+        }
+        
+        
+        
+        
+    }
+    
 
     private void insert(String currentLine) {
         DBObject doc = (DBObject)JSON.parse(currentLine);

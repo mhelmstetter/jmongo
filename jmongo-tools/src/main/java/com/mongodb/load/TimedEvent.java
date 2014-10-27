@@ -27,18 +27,15 @@ public class TimedEvent {
 
     private long duration = -1;
 
-    private boolean error = false;
+    //private boolean error = false;
 
     private long start;
     
     private long count = 0;
+    
+    private long errorCount = 0;
 
     public TimedEvent() {
-        start = System.nanoTime();
-    }
-
-    public TimedEvent(boolean _error) {
-        error = _error;
         start = System.nanoTime();
     }
 
@@ -86,7 +83,7 @@ public class TimedEvent {
         if (_bytes > -1) {
             bytes = _bytes;
         }
-        error = _error;
+        //error = _error;
         return duration;
     }
 
@@ -105,7 +102,7 @@ public class TimedEvent {
      * @return
      */
     public boolean isError() {
-        return error;
+        return errorCount > 0;
     }
 
     /**
@@ -126,12 +123,9 @@ public class TimedEvent {
     public void incrementCount(long i) {
         count += i;
     }
-
-    /**
-     * @param b
-     */
-    public void setError(boolean b) {
-        error = true;
+    
+    public void incrementError(long i) {
+        errorCount += i;
     }
 
     public long getCount() {
@@ -140,6 +134,10 @@ public class TimedEvent {
 
     public void setCount(long count) {
         this.count = count;
+    }
+
+    public long getErrorCount() {
+        return errorCount;
     }
 
 }

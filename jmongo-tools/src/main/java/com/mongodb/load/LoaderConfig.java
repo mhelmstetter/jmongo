@@ -30,7 +30,6 @@ public class LoaderConfig {
 //    private Integer port;
     private String databaseName;
     private String collectionName;
-    private String connectionUri;
     
     private String inputPath;
     private File inputPathFile;
@@ -68,8 +67,19 @@ public class LoaderConfig {
 //        databaseName = props.getString("database");
 //        collectionName = props.getString("collection");
         
+        inputPath = line.getOptionValue("i");
+        inputPathFile = new File(inputPath);
+        // TODO verify path is readable, etc.
         
+        // TODO read this from command line
+        inputPattern = DEFAULT_INPUT_PATTERN;
         String[] connectionUris = line.getOptionValues("u");
+        
+        if (inputPath == null || connectionUris == null) {
+            throw new ParseException("Missing configuration: inputPath, and uri are required");
+        }
+        
+        
         List<DBCollection> collections = new ArrayList<DBCollection>(connectionUris.length);
         for (String connectionUri : connectionUris) {
             MongoClientURI uri = new MongoClientURI(connectionUri);
@@ -92,20 +102,6 @@ public class LoaderConfig {
         }
         RoundRobin<DBCollection> roundRobin = new RoundRobin<DBCollection>(collections);
         collectionRoundRobin = roundRobin.iterator();
-        
-        inputPath = line.getOptionValue("i");
-        inputPathFile = new File(inputPath);
-        // TODO verify path is readable, etc.
-        
-        // TODO read this from command line
-        inputPattern = DEFAULT_INPUT_PATTERN;
-        
-        
-        if (inputPath == null || connectionUri == null) {
-            throw new ParseException("Missing configuration: inputPath, and uri are required");
-        }
-        
-        
         
         //dropCollection = props.getBoolean("dropCollection", false);
         batchSize = ((Long)line.getParsedOptionValue("b")).intValue();
