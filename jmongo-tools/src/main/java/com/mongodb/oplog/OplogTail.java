@@ -1,4 +1,4 @@
-package com.mongodb.load;
+package com.mongodb.oplog;
 
 import java.net.UnknownHostException;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -17,49 +17,43 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.mongodb.DBCollection;
 import com.mongodb.util.Monitor;
 
-public class Loader {
+public class OplogTail {
 
-    protected static final Logger logger = LoggerFactory.getLogger(Loader.class);
+    protected static final Logger logger = LoggerFactory.getLogger(OplogTail.class);
 
     private ThreadPoolExecutor pool = null;
 
-    private LoaderConfig config;
+    private Config config;
 
     private Monitor monitor;
 
-    public Loader(LoaderConfig config) {
+    public OplogTail(Config config) {
         this.config = config;
     }
 
-    private void load() throws UnknownHostException {
+    private void run() throws UnknownHostException {
 
-        if (config.isDropCollection()) {
-            DBCollection c = config.getCollection();
-            if (logger.isDebugEnabled()) {
-                logger.debug("Dropping collection: " + c);
-            }
-            c.drop();
-        }
+        
         
         BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<Runnable>(config.getQueueSize());
         pool = new ThreadPoolExecutor(config.getThreads(), config.getThreads(), 30, TimeUnit.SECONDS, workQueue);
         pool.prestartAllCoreThreads();
 
         monitor = new Monitor(Thread.currentThread());
+        config.setMonitor(monitor);
         monitor.setPool(pool);
         monitor.start();
 
         queueDocuments();
 
-        pool.shutdown();
+        //pool.shutdown();
 
         while (!pool.isTerminated()) {
             Thread.yield();
             try {
-                Thread.sleep(config.getThreads() * LoaderConfig.SLEEP_TIME);
+                Thread.sleep(config.getThreads() * Config.SLEEP_TIME);
             } catch (InterruptedException e) {
                 // reset interrupted status
                 Thread.interrupted();
@@ -111,33 +105,28 @@ public class Loader {
     }
 
     private void queueDocuments() {
-        FileScanner scanner = new FileScanner(config, pool, monitor);
-        scanner.scan();
+        OplogTailThread scanner = new OplogTailThread(config, pool, monitor);
+        scanner.start();
 
     }
     
     @SuppressWarnings("static-access")
-    private static LoaderConfig initializeAndParseCommandLineOptions(String[] args) throws ConfigurationException, UnknownHostException {
+    private static Config initializeAndParseCommandLineOptions(String[] args) throws ConfigurationException, UnknownHostException {
         Options options = new Options();
-        options.addOption(OptionBuilder.withArgName("connection uri(s)")
+        options.addOption(OptionBuilder.withArgName("connection uri")
                 .hasArgs()
                 .isRequired()
-                .withDescription(  "mongodb connection string uri(s), multiple uris will be round-robined" )
+                .withDescription(  "mongodb connection string uri" )
                 .withLongOpt("uri")
                 .create( "u" ));
-        options.addOption(OptionBuilder.withArgName("input path")
-                .hasArg()
-                .isRequired()
-                .withDescription(  "directory path to load files from" )
-                .withLongOpt("inputPath")
-                .create( "i" ));
+        
         options.addOption(OptionBuilder.withArgName("# threads")
                 .hasArg()
                 .withDescription(  "number of threads" )
                 .withLongOpt("threads")
                 .withType(Number.class)
                 .create( "t" ));
-        options.addOption(OptionBuilder.withArgName("batch size (default 8)")
+        options.addOption(OptionBuilder.withArgName("batch size (default 100)")
                 .hasArg()
                 .withDescription(  "number of documents per batch (default 100)" )
                 .withLongOpt("batchSize")
@@ -146,10 +135,10 @@ public class Loader {
 
         CommandLineParser parser = new GnuParser();
         CommandLine line = null;
-        LoaderConfig config = null;
+        Config config = null;
         try {
             line = parser.parse( options, args );
-            config = new LoaderConfig(line);
+            config = new Config(line);
         } catch (ParseException e) {
             System.out.println(e.getMessage());
             printHelpAndExit(options);
@@ -169,11 +158,11 @@ public class Loader {
 
     public static void main(String[] args) throws ConfigurationException, UnknownHostException {
         
-        LoaderConfig config = initializeAndParseCommandLineOptions(args);
-        Loader loader = new Loader(config);
+        Config config = initializeAndParseCommandLineOptions(args);
+        OplogTail loader = new OplogTail(config);
 
         try {
-            loader.load();
+            loader.run();
         } catch (Exception e) {
             logger.error("Error loading data", e);
         } finally {

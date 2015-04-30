@@ -10,6 +10,8 @@ import java.util.Random;
 
 
 public class RandomUtils {
+    
+    Random rand = new Random();
 
     public static int getRandomInt(int min, int max) {
         int ret;
@@ -25,6 +27,10 @@ public class RandomUtils {
     		sb.append(r.nextInt(9));
     	}
     	return sb.toString();
+    }
+    
+    public long getRandomLong() {
+        return rand.nextLong();
     }
  
     public static Object getRandomElement(List list) {

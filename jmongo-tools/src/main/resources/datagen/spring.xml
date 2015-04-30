@@ -82,7 +82,7 @@
 		<property name="mongoClient" ref="mongo" />
 		<property name="databaseName" value="${mongo.databaseName}" />
 		<property name="collectionName" value="${mongo.collectionName}" />
-		<property name="dropCollection" value="true" />
+		<property name="dropCollection" value="false" />
 		
 	</bean>
 

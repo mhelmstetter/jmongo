@@ -48,8 +48,6 @@ public class Monitor extends Thread {
 
     private ThreadPoolExecutor pool;
 
-    private LoaderConfig config;
-
     private int totalSkipped = 0;
 
     private Thread parent;
@@ -67,10 +65,9 @@ public class Monitor extends Thread {
      * @param _c
      * @param _p
      */
-    public Monitor(LoaderConfig _c, Thread _p) {
-        config = _c;
+    public Monitor(Thread _p) {
         parent = _p;
-        
+        lastDisplayMillis = System.currentTimeMillis();
     }
 
     public void run() {
@@ -100,12 +97,8 @@ public class Monitor extends Thread {
         try {
             pool.awaitTermination(30, TimeUnit.SECONDS);
         } catch (InterruptedException e1) {
-            // interrupt status will be reset below,
-            // in case parent re-interrupts us
         }
 
-        // NB - we used to call System.exit(0) here - necessary?
-        // sometimes the main RecordLoader thread will hit CallerBlocksPolicy
         parent.interrupt();
 
         if (isInterrupted()) {
@@ -128,11 +121,12 @@ public class Monitor extends Thread {
         while (running && !isInterrupted()) {
             // try to avoid thread starvation
             yield();
-
+            
             currentMillis = System.currentTimeMillis();
-            if (currentMillis - lastDisplayMillis > displayMillis
-                    && (lastSkipped < totalSkipped || lastCount < timer
-                            .getEventCount())) {
+            long elapsed = currentMillis - lastDisplayMillis;
+            //logger.trace("Monitor loop " + currentMillis + " " + lastDisplayMillis + " " + elapsed);
+            if (currentMillis - lastDisplayMillis > displayMillis) {
+                    //&& (lastSkipped < totalSkipped || lastCount < timer.getEventCount())) {
                 lastDisplayMillis = currentMillis;
                 lastSkipped = totalSkipped;
                 // events include errors
@@ -186,12 +180,7 @@ public class Monitor extends Thread {
      * @param _event
      */
     public synchronized void add(TimedEvent _event) {
-        
-        // do not keep the TimedEvent objects in the timer: 48-B each
         timer.add(_event, false);
-
-        
-
     }
 
     
@@ -201,16 +190,6 @@ public class Monitor extends Thread {
      */
     public long getEventCount() {
         return timer.getEventCount();
-    }
-
-    /**
-     * 
-     */
-    public void resetThreadPool() {
-        logger.info("resetting thread pool size");
-        int threadCount = config.getThreads();
-        pool.setMaximumPoolSize(threadCount);
-        pool.setCorePoolSize(threadCount);
     }
 
 
@@ -239,10 +218,6 @@ public class Monitor extends Thread {
                 + " records ok (" + timer.getProgressMessage(true)
                 + "), with " + timer.getErrorCount() + " error(s)");
         timer = new Timer();
-    }
-
-    public void instanceInterrupted() {
-        interrupted();
     }
 
 }
