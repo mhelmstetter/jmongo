@@ -50,7 +50,7 @@ public class VelocityServiceImpl {
 			throws VelocityException {
 		try {
 			VelocityContext context = new VelocityContext(model);
-			context.put("date", dateTool);
+			context.put("dateTool", dateTool);
 			context.put("listTool", listTool);
 			context.put("number", numberTool);
 			context.put("math", mathTool);

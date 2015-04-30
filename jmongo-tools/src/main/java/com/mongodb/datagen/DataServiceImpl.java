@@ -53,6 +53,7 @@ public class DataServiceImpl implements DataService {
 		
 			for (String template : templateDictionary.getEntries()) {
 				DataElement d = generateData(template);
+				logger.debug(d.getData());
 				for (DataHandler dh : dataHandlers) {
 					try {
 						dh.handleMessageEvent(d);
