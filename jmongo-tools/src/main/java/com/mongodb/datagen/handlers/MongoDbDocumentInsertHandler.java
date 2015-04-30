@@ -38,7 +38,7 @@ public class MongoDbDocumentInsertHandler implements DataHandler {
 	@Override
 	public boolean handleMessageEvent(DataElement message) throws Exception {
 	    DBObject doc = (DBObject)JSON.parse(message.getData());
-	    logger.debug("date: " + doc.get("completeTreatmentInfo.shiftDate"));
+	    //logger.debug("date: " + doc.get("completeTreatmentInfo.shiftDate"));
 		collection.insert(doc);
         return true;
 	}
